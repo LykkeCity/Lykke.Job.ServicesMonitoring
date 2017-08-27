@@ -18,6 +18,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
 {
     public class CheckAllServices
     {
+        private const string SlackMonitorChannel = "Monitor";
         private readonly IServiceMonitoringRepository _serviceMonitoringRepository;
         private readonly HostToCheck[] _hostsToCheck;
         private readonly SlackIntegrationSettings _slackIntegrationSettings;
@@ -45,7 +46,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
             catch (Exception ex)
             {
                 var msg = $":exclamation: Error while services checking:{Environment.NewLine} {ex.Message}";
-                await SendNotification(ChannelTypes.Errors, msg);
+                await SendNotification(SlackMonitorChannel, msg);
                 throw;
             }
         }
@@ -61,7 +62,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
             }
             catch (Exception)
             {
-                await SendNotification(ChannelTypes.Errors, "Error while checking hosts!");
+                await SendNotification(SlackMonitorChannel, "Error while checking hosts!");
                 throw;
             }
         }
@@ -81,7 +82,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
                     if (!string.IsNullOrEmpty(model?.Error))
                     {
                         await SendNotification(
-                            ChannelTypes.Errors, $":exclamation: {host.ServiceName}: {model.Error}");
+                            SlackMonitorChannel, $":exclamation: {host.ServiceName}: {model.Error}");
                     }
                 }
                 catch
@@ -113,7 +114,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
             {
                 if (dtUtcNow - record.DateTime > _updateTimeSpan)
                     await SendNotification(
-                        ChannelTypes.Errors,
+                        SlackMonitorChannel,
                         $":exclamation: No updates from {record.ServiceName} within {(dtUtcNow - record.DateTime).ToString("h'h 'm'm 's's'")}!");
             }
         }
