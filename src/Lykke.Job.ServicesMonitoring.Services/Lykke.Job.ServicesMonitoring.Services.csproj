@@ -10,6 +10,11 @@
     <WarningsAsErrors></WarningsAsErrors>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Lykke.Common" Version="1.1.93" />
     <PackageReference Include="RestSharp.NetCore" Version="105.2.3" />
