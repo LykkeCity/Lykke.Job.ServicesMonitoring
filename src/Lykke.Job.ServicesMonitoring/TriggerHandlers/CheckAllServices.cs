@@ -5,14 +5,18 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+
 using Common;
 using Common.Log;
-using Lykke.JobTriggers.Triggers.Attributes;
-using Lykke.Job.ServicesMonitoring.Core;
-using Lykke.Job.ServicesMonitoring.Core.Domain;
+
 using Lykke.Job.ServicesMonitoring.Core.Domain.Monitoring;
-using Lykke.Job.ServicesMonitoring.Services;
+using Lykke.Job.ServicesMonitoring.Core.Settings;
+using Lykke.Job.ServicesMonitoring.Core.Settings.JobSettings;
+using Lykke.Job.ServicesMonitoring.Core.Settings.SlackNotifications;
 using Lykke.Job.ServicesMonitoring.Models;
+using Lykke.Job.ServicesMonitoring.Services;
+using Lykke.JobTriggers.Triggers.Attributes;
+using Lykke.SettingsReader;
 
 namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
 {
@@ -20,19 +24,19 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
     {
         private const string SlackMonitorChannel = "Monitor";
         private readonly IServiceMonitoringRepository _serviceMonitoringRepository;
-        private readonly HostToCheck[] _hostsToCheck;
-        private readonly SlackIntegrationSettings _slackIntegrationSettings;
+        private readonly IReloadingManager<ServiceMonitoringSettings> _serviceMonitoringSettings;
+        private readonly IReloadingManager<SlackIntegrationSettings> _slackIntegrationSettings;
         private readonly ILog _log;
         private readonly TimeSpan _updateTimeSpan = TimeSpan.FromSeconds(120);
 
         public CheckAllServices(
             IServiceMonitoringRepository serviceMonitoringRepository,
-            AppSettings appSettings,
+            IReloadingManager<AppSettings> settings,
             ILog log)
         {
             _serviceMonitoringRepository = serviceMonitoringRepository;
-            _hostsToCheck = appSettings.ServiceMonitoringJob.HostsToCheck;
-            _slackIntegrationSettings = appSettings.SlackIntegration;
+            _serviceMonitoringSettings = settings.Nested(x => x.ServiceMonitoringJob);
+            _slackIntegrationSettings = settings.Nested(x => x.SlackIntegration);
             _log = log;
         }
 
@@ -56,7 +60,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
         {
             try
             {
-                var amIAliveTasks = _hostsToCheck.Select(CheckHost);
+                var amIAliveTasks = _serviceMonitoringSettings.CurrentValue.HostsToCheck.Select(CheckHost);
 
                 await Task.WhenAny(Task.WhenAll(amIAliveTasks), Task.Delay(10000));
             }
@@ -121,18 +125,18 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
 
         private async Task SendNotification(string type, string message, string sender = null)
         {
-            var webHookUrl = _slackIntegrationSettings.GetChannelWebHook(type);
+            var webHookUrl = _slackIntegrationSettings.CurrentValue.GetChannelWebHook(type);
             if (webHookUrl == null)
                 return;
 
             var text = new StringBuilder();
 
-            if (!string.IsNullOrEmpty(_slackIntegrationSettings.Env))
-                text.AppendLine($"Environment: {_slackIntegrationSettings.Env}");
+            if (!string.IsNullOrEmpty(_slackIntegrationSettings.CurrentValue.Env))
+                text.AppendLine($"Environment: {_slackIntegrationSettings.CurrentValue.Env}");
 
             text.AppendLine(sender != null ? $"{sender} : {message}" : message);
 
-            await HttpRequestClient.PostRequestAsync(new { text = text.ToString() }.ToJson(), webHookUrl);
+            await HttpRequestClient.PostRequestAsync(webHookUrl, new { text = text.ToString() }.ToJson());
         }
     }
 }

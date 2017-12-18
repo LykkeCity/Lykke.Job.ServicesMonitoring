@@ -16,8 +16,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lykke.Common" Version="1.1.93" />
-    <PackageReference Include="RestSharp.NetCore" Version="105.2.3" />
+    <PackageReference Include="Lykke.Common" Version="3.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lykke.Job.ServicesMonitoring.Core\Lykke.Job.ServicesMonitoring.Core.csproj" />
   </ItemGroup>
 
 </Project>

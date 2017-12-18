@@ -1,14 +1,26 @@
-﻿using System;
+﻿using System.Linq;
 using System.Net;
+
+using Lykke.Job.ServicesMonitoring.Core.Services;
 using Lykke.Job.ServicesMonitoring.Models;
+
 using Microsoft.AspNetCore.Mvc;
-using Swashbuckle.SwaggerGen.Annotations;
+
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Lykke.Job.ServicesMonitoring.Controllers
 {
+    // NOTE: See https://lykkex.atlassian.net/wiki/spaces/LKEWALLET/pages/35755585/Add+your+app+to+Monitoring
     [Route("api/[controller]")]
     public class IsAliveController : Controller
     {
+        private readonly IHealthService _healthService;
+
+        public IsAliveController(IHealthService healthService)
+        {
+            _healthService = healthService;
+        }
+
         /// <summary>
         /// Checks service is alive
         /// </summary>
@@ -19,20 +31,32 @@ namespace Lykke.Job.ServicesMonitoring.Controllers
         [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.InternalServerError)]
         public IActionResult Get()
         {
-            // TODO: Check job health status here, if job unhealthy, send ErrorResponse
-            // if (!isHealthy)
-            // {
-            //     return StatusCode((int) HttpStatusCode.InternalServerError, new ErrorResponse
-            //     {
-            //         ErrorMessage = "Problem description"
-            //     });
-            // }
+            var healthViloationMessage = _healthService.GetHealthViolationMessage();
+            if (healthViloationMessage != null)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError, new ErrorResponse
+                {
+                    ErrorMessage = $"Job is unhealthy: {healthViloationMessage}"
+                });
+            }
 
-            // NOTE: Feel free to extend IsAliveResponse, to display job-specific health status
+            // NOTE: Feel free to extend IsAliveResponse, to display job-specific indicators
             return Ok(new IsAliveResponse
             {
+                Name = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationName,
                 Version = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion,
-                Env = Environment.GetEnvironmentVariable("Env")
+                Env = Program.EnvInfo,
+#if DEBUG
+                IsDebug = true,
+#else
+                IsDebug = false,
+#endif
+                IssueIndicators = _healthService.GetHealthIssues()
+                    .Select(i => new IsAliveResponse.IssueIndicator
+                    {
+                        Type = i.Type,
+                        Value = i.Value
+                    })
             });
         }
     }
