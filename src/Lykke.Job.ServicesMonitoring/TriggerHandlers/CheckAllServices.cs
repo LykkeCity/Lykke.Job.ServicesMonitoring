@@ -49,7 +49,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
             }
             catch (Exception ex)
             {
-                var msg = $":exclamation: Error while services checking:{Environment.NewLine} {ex.Message}";
+                var msg = $":exclamation: {_appName} {_appVersion}: Error while services checking:{Environment.NewLine} {ex.Message}";
                 await SendNotification(SlackMonitorChannel, msg);
                 throw;
             }
@@ -86,7 +86,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
                     if (!string.IsNullOrEmpty(model?.Error))
                     {
                         await SendNotification(
-                            SlackMonitorChannel, $"{_appName} {_appVersion} : :exclamation: {host.ServiceName}: {model.Error}");
+                            SlackMonitorChannel, $":exclamation: {_appName} {_appVersion}: {host.ServiceName}: {model.Error}");
                     }
                 }
                 catch
@@ -117,10 +117,12 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
             foreach (var record in records)
             {
                 var timeDiff = dtUtcNow - record.DateTime;
-                if (timeDiff > _updateTimeSpan)
-                    await SendNotification(
-                        SlackMonitorChannel,
-                        $":exclamation: No updates from {record.ServiceName} within {timeDiff.ToString("d'd 'h'h 'm'm 's's'")}!");
+                if (timeDiff <= _updateTimeSpan)
+                    continue;
+
+                await SendNotification(
+                    SlackMonitorChannel,
+                    $":exclamation: {_appName} {_appVersion}: No updates from {record.ServiceName} within {timeDiff.ToString("d'd 'h'h 'm'm 's's'")}!");
             }
         }
 
