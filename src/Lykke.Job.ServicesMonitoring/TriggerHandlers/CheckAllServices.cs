@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.PlatformAbstractions;
 using Common;
 using Common.Log;
 using Lykke.JobTriggers.Triggers.Attributes;
@@ -19,11 +20,14 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
     public class CheckAllServices
     {
         private const string SlackMonitorChannel = "Monitor";
+
         private readonly IServiceMonitoringRepository _serviceMonitoringRepository;
         private readonly HostToCheck[] _hostsToCheck;
         private readonly SlackIntegrationSettings _slackIntegrationSettings;
         private readonly ILog _log;
         private readonly TimeSpan _updateTimeSpan = TimeSpan.FromSeconds(120);
+        private readonly string _appName = PlatformServices.Default.Application.ApplicationName;
+        private readonly string _appVersion = PlatformServices.Default.Application.ApplicationVersion;
 
         public CheckAllServices(
             IServiceMonitoringRepository serviceMonitoringRepository,
@@ -82,7 +86,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
                     if (!string.IsNullOrEmpty(model?.Error))
                     {
                         await SendNotification(
-                            SlackMonitorChannel, $":exclamation: {host.ServiceName}: {model.Error}");
+                            SlackMonitorChannel, $"{_appName} {_appVersion} : :exclamation: {host.ServiceName}: {model.Error}");
                     }
                 }
                 catch
