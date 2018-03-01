@@ -1,16 +1,18 @@
 ﻿using Autofac;
 
-using AzureStorage.Tables;
-
 using Common.Cache;
 using Common.Log;
 
+using AzureStorage.Tables;
+using Lykke.SettingsReader;
+
+using Lykke.Job.ServicesMonitoring.Core;
+using Lykke.Job.ServicesMonitoring.Core.Domain.Monitoring;
 using Lykke.Job.ServicesMonitoring.AzureRepositories;
 using Lykke.Job.ServicesMonitoring.Core.Domain.Monitoring;
 using Lykke.Job.ServicesMonitoring.Core.Services;
 using Lykke.Job.ServicesMonitoring.Settings.JobSettings;
 using Lykke.Job.ServicesMonitoring.Services;
-using Lykke.SettingsReader;
 
 namespace Lykke.Job.ServicesMonitoring.Modules
 {
@@ -50,9 +52,6 @@ namespace Lykke.Job.ServicesMonitoring.Modules
 
             builder.RegisterType<ShutdownManager>()
                 .As<IShutdownManager>();
-
-            // NOTE: You can implement your own poison queue notifier. See https://github.com/LykkeCity/JobTriggers/blob/master/readme.md
-            // builder.Register<PoisionQueueNotifierImplementation>().As<IPoisionQueueNotifier>();
 
             var cacheManager = new MemoryCacheManager();
             builder.RegisterInstance(cacheManager).As<ICacheManager>();
