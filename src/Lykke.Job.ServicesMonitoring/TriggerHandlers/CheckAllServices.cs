@@ -40,7 +40,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
             _log = log;
         }
 
-        [TimerTrigger("00:00:30")]
+        [TimerTrigger("00:01:00")]
         public async Task CheckServicesUpdates()
         {
             try
@@ -55,7 +55,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
             }
         }
 
-        [TimerTrigger("00:00:30")]
+        [TimerTrigger("00:01:00")]
         public async Task VerifyHostsAreOk()
         {
             try
@@ -116,10 +116,11 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
             var dtUtcNow = DateTime.UtcNow;
             foreach (var record in records)
             {
-                if (dtUtcNow - record.DateTime > _updateTimeSpan)
+                var timeDiff = dtUtcNow - record.DateTime;
+                if (timeDiff > _updateTimeSpan)
                     await SendNotification(
                         SlackMonitorChannel,
-                        $":exclamation: No updates from {record.ServiceName} within {(dtUtcNow - record.DateTime).ToString("h'h 'm'm 's's'")}!");
+                        $":exclamation: No updates from {record.ServiceName} within {timeDiff.ToString("d'd 'h'h 'm'm 's's'")}!");
             }
         }
 
