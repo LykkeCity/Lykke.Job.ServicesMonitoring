@@ -2,6 +2,7 @@
 using Common.Cache;
 using Common.Log;
 using AzureStorage.Tables;
+using Lykke.SettingsReader;
 using Lykke.Job.ServicesMonitoring.Core;
 using Lykke.Job.ServicesMonitoring.Core.Domain.Monitoring;
 using Lykke.Job.ServicesMonitoring.AzureRepositories;
@@ -11,11 +12,13 @@ namespace Lykke.Job.ServicesMonitoring.Modules
     public class JobModule : Module
     {
         private readonly ServiceMonitoringSettings _settings;
+        private readonly IReloadingManager<ServiceMonitoringSettings> _settingsManager;
         private readonly ILog _log;
 
-        public JobModule(ServiceMonitoringSettings settings, ILog log)
+        public JobModule(ServiceMonitoringSettings settings, IReloadingManager<ServiceMonitoringSettings> settingsManager, ILog log)
         {
             _settings = settings;
+            _settingsManager = settingsManager;
             _log = log;
         }
 
@@ -28,9 +31,6 @@ namespace Lykke.Job.ServicesMonitoring.Modules
                 .As<ILog>()
                 .SingleInstance();
 
-            // NOTE: You can implement your own poison queue notifier. See https://github.com/LykkeCity/JobTriggers/blob/master/readme.md
-            // builder.Register<PoisionQueueNotifierImplementation>().As<IPoisionQueueNotifier>();
-
             var cacheManager = new MemoryCacheManager();
             builder.RegisterInstance(cacheManager).As<ICacheManager>();
 
@@ -41,7 +41,7 @@ namespace Lykke.Job.ServicesMonitoring.Modules
         {
             builder.RegisterInstance<IServiceMonitoringRepository>(
                 new ServiceMonitoringRepository(
-                    new AzureTableStorage<MonitoringRecordEntity>(_settings.SharedStorageConnString, "Monitoring", _log)));
+                    AzureTableStorage<MonitoringRecordEntity>.Create(_settingsManager.ConnectionString(s => s.SharedStorageConnString), "Monitoring", _log)));
         }
     }
 }
