@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Linq;
 
-namespace Lykke.Job.ServicesMonitoring.Core.Settings.SlackNotifications
+namespace Lykke.Job.ServicesMonitoring.Settings.SlackNotifications
 {
     [DebuggerDisplay("{Env} env: {Channels.Length} channels")]
     public class SlackIntegrationSettings

@@ -11,9 +11,9 @@ using Common;
 using Common.Log;
 
 using Lykke.Job.ServicesMonitoring.Core.Domain.Monitoring;
-using Lykke.Job.ServicesMonitoring.Core.Settings;
-using Lykke.Job.ServicesMonitoring.Core.Settings.JobSettings;
-using Lykke.Job.ServicesMonitoring.Core.Settings.SlackNotifications;
+using Lykke.Job.ServicesMonitoring.Settings;
+using Lykke.Job.ServicesMonitoring.Settings.JobSettings;
+using Lykke.Job.ServicesMonitoring.Settings.SlackNotifications;
 using Lykke.Job.ServicesMonitoring.Models;
 using Lykke.Job.ServicesMonitoring.Services;
 using Lykke.JobTriggers.Triggers.Attributes;

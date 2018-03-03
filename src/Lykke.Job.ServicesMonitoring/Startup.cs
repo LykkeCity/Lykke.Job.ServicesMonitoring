@@ -11,7 +11,7 @@ using Common.Log;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.Job.ServicesMonitoring.Core.Services;
-using Lykke.Job.ServicesMonitoring.Core.Settings;
+using Lykke.Job.ServicesMonitoring.Settings;
 using Lykke.Job.ServicesMonitoring.Models;
 using Lykke.Job.ServicesMonitoring.Modules;
 using Lykke.JobTriggers.Extenstions;

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
-namespace Lykke.Job.ServicesMonitoring.Core.Settings.JobSettings
+namespace Lykke.Job.ServicesMonitoring.Settings.JobSettings
 {
     [DebuggerDisplay("{ServiceName}: {Url}")]
     public class HostToCheck

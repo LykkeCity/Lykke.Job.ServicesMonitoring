@@ -11,7 +11,7 @@ using Lykke.Job.ServicesMonitoring.AzureRepositories;
 using Lykke.Job.ServicesMonitoring.Core;
 using Lykke.Job.ServicesMonitoring.Core.Domain.Monitoring;
 using Lykke.Job.ServicesMonitoring.Core.Services;
-using Lykke.Job.ServicesMonitoring.Core.Settings.JobSettings;
+using Lykke.Job.ServicesMonitoring.Settings.JobSettings;
 using Lykke.Job.ServicesMonitoring.Services;
 
 namespace Lykke.Job.ServicesMonitoring.Modules
