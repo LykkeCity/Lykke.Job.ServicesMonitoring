@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace Lykke.Job.ServicesMonitoring.Core.Settings.JobSettings
+namespace Lykke.Job.ServicesMonitoring.Settings.JobSettings
 {
     [DebuggerDisplay("LogsConnString: {LogsConnString}")]
     public class DbSettings

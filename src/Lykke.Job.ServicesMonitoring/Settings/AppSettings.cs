@@ -1,7 +1,7 @@
-﻿using Lykke.Job.ServicesMonitoring.Core.Settings.JobSettings;
-using Lykke.Job.ServicesMonitoring.Core.Settings.SlackNotifications;
+﻿using Lykke.Job.ServicesMonitoring.Settings.JobSettings;
+using Lykke.Job.ServicesMonitoring.Settings.SlackNotifications;
 
-namespace Lykke.Job.ServicesMonitoring.Core.Settings
+namespace Lykke.Job.ServicesMonitoring.Settings
 {
     public class AppSettings
     {

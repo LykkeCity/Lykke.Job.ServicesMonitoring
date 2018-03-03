@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Lykke.Job.ServicesMonitoring.Core.Settings.SlackNotifications
+namespace Lykke.Job.ServicesMonitoring.Settings.SlackNotifications
 {
     [DebuggerDisplay("ThrottlingLimit: {ThrottlingLimitSeconds} seconds")]
     public class SlackNotificationsSettings
