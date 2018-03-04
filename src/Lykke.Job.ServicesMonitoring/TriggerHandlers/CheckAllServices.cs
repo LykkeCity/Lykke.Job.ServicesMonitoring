@@ -24,7 +24,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
     {
         private const string SlackMonitorChannel = "Monitor";
         private readonly IServiceMonitoringRepository _serviceMonitoringRepository;
-        private readonly IReloadingManager<ServiceMonitoringSettings> _serviceMonitoringSettings;
+        private readonly ServiceMonitoringSettings _serviceMonitoringSettings;
         private readonly IReloadingManager<SlackIntegrationSettings> _slackIntegrationSettings;
         private readonly ILog _log;
         private readonly TimeSpan _updateTimeSpan = TimeSpan.FromSeconds(120);
@@ -35,7 +35,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
             ILog log)
         {
             _serviceMonitoringRepository = serviceMonitoringRepository;
-            _serviceMonitoringSettings = settings.Nested(x => x.ServiceMonitoringJob);
+            _serviceMonitoringSettings = settings.Nested(x => x.ServiceMonitoringJob).CurrentValue;
             _slackIntegrationSettings = settings.Nested(x => x.SlackIntegration);
             _log = log;
         }
@@ -60,7 +60,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
         {
             try
             {
-                var amIAliveTasks = _serviceMonitoringSettings.CurrentValue.HostsToCheck.Select(CheckHost);
+                var amIAliveTasks = _serviceMonitoringSettings.HostsToCheck.Select(CheckHost);
 
                 await Task.WhenAny(Task.WhenAll(amIAliveTasks), Task.Delay(10000));
             }
