@@ -5,38 +5,47 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.PlatformAbstractions;
+
 using Common;
 using Common.Log;
-using Lykke.JobTriggers.Triggers.Attributes;
-using Lykke.Job.ServicesMonitoring.Core;
-using Lykke.Job.ServicesMonitoring.Core.Domain;
+
 using Lykke.Job.ServicesMonitoring.Core.Domain.Monitoring;
-using Lykke.Job.ServicesMonitoring.Services;
+using Lykke.Job.ServicesMonitoring.Settings;
+using Lykke.Job.ServicesMonitoring.Settings.JobSettings;
+using Lykke.Job.ServicesMonitoring.Settings.SlackNotifications;
 using Lykke.Job.ServicesMonitoring.Models;
+using Lykke.Job.ServicesMonitoring.Services;
+using Lykke.JobTriggers.Triggers.Attributes;
+using Lykke.SettingsReader;
 
 namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
 {
     public class CheckAllServices
     {
         private const string SlackMonitorChannel = "Monitor";
+
         private readonly IServiceMonitoringRepository _serviceMonitoringRepository;
-        private readonly HostToCheck[] _hostsToCheck;
+        private readonly ServiceMonitoringSettings _serviceMonitoringSettings;
         private readonly SlackIntegrationSettings _slackIntegrationSettings;
         private readonly ILog _log;
         private readonly TimeSpan _updateTimeSpan = TimeSpan.FromSeconds(120);
+        private readonly string _appName = PlatformServices.Default.Application.ApplicationName;
+        private readonly string _appVersion = PlatformServices.Default.Application.ApplicationVersion;
 
         public CheckAllServices(
             IServiceMonitoringRepository serviceMonitoringRepository,
-            AppSettings appSettings,
+            IReloadingManager<AppSettings> settings,
             ILog log)
         {
             _serviceMonitoringRepository = serviceMonitoringRepository;
-            _hostsToCheck = appSettings.ServiceMonitoringJob.HostsToCheck;
-            _slackIntegrationSettings = appSettings.SlackIntegration;
+            _serviceMonitoringSettings = settings.Nested(x => x.ServiceMonitoringJob).CurrentValue;
+            _slackIntegrationSettings = settings.Nested(x => x.SlackIntegration).CurrentValue;
+
             _log = log;
         }
 
-        [TimerTrigger("00:00:30")]
+        [TimerTrigger("00:01:00")]
         public async Task CheckServicesUpdates()
         {
             try
@@ -45,18 +54,18 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
             }
             catch (Exception ex)
             {
-                var msg = $":exclamation: Error while services checking:{Environment.NewLine} {ex.Message}";
+                var msg = $":exclamation: {_appName} {_appVersion}: Error while services checking:{Environment.NewLine} {ex.Message}";
                 await SendNotification(SlackMonitorChannel, msg);
                 throw;
             }
         }
 
-        [TimerTrigger("00:00:30")]
+        [TimerTrigger("00:01:00")]
         public async Task VerifyHostsAreOk()
         {
             try
             {
-                var amIAliveTasks = _hostsToCheck.Select(CheckHost);
+                var amIAliveTasks = _serviceMonitoringSettings.HostsToCheck.Select(CheckHost);
 
                 await Task.WhenAny(Task.WhenAll(amIAliveTasks), Task.Delay(10000));
             }
@@ -82,7 +91,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
                     if (!string.IsNullOrEmpty(model?.Error))
                     {
                         await SendNotification(
-                            SlackMonitorChannel, $":exclamation: {host.ServiceName}: {model.Error}");
+                            SlackMonitorChannel, $":exclamation: {_appName} {_appVersion}: {host.ServiceName}: {model.Error}");
                     }
                 }
                 catch
@@ -112,10 +121,13 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
             var dtUtcNow = DateTime.UtcNow;
             foreach (var record in records)
             {
-                if (dtUtcNow - record.DateTime > _updateTimeSpan)
-                    await SendNotification(
-                        SlackMonitorChannel,
-                        $":exclamation: No updates from {record.ServiceName} within {(dtUtcNow - record.DateTime).ToString("h'h 'm'm 's's'")}!");
+                var timeDiff = dtUtcNow - record.DateTime;
+                if (timeDiff <= _updateTimeSpan)
+                    continue;
+
+                await SendNotification(
+                    SlackMonitorChannel,
+                    $":exclamation: {_appName} {_appVersion}: No updates from {record.ServiceName} within {timeDiff.ToString("d'd 'h'h 'm'm 's's'")}!");
             }
         }
 
@@ -132,7 +144,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
 
             text.AppendLine(sender != null ? $"{sender} : {message}" : message);
 
-            await HttpRequestClient.PostRequestAsync(new { text = text.ToString() }.ToJson(), webHookUrl);
+            await HttpRequestClient.PostRequestAsync(webHookUrl, new { text = text.ToString() }.ToJson());
         }
     }
 }
