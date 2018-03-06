@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.PlatformAbstractions;
 
 using Common;
 using Common.Log;
@@ -23,11 +24,14 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
     public class CheckAllServices
     {
         private const string SlackMonitorChannel = "Monitor";
+
         private readonly IServiceMonitoringRepository _serviceMonitoringRepository;
         private readonly ServiceMonitoringSettings _serviceMonitoringSettings;
-        private readonly IReloadingManager<SlackIntegrationSettings> _slackIntegrationSettings;
+        private readonly SlackIntegrationSettings _slackIntegrationSettings;
         private readonly ILog _log;
         private readonly TimeSpan _updateTimeSpan = TimeSpan.FromSeconds(120);
+        private readonly string _appName = PlatformServices.Default.Application.ApplicationName;
+        private readonly string _appVersion = PlatformServices.Default.Application.ApplicationVersion;
 
         public CheckAllServices(
             IServiceMonitoringRepository serviceMonitoringRepository,
@@ -36,11 +40,12 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
         {
             _serviceMonitoringRepository = serviceMonitoringRepository;
             _serviceMonitoringSettings = settings.Nested(x => x.ServiceMonitoringJob).CurrentValue;
-            _slackIntegrationSettings = settings.Nested(x => x.SlackIntegration);
+            _slackIntegrationSettings = settings.Nested(x => x.SlackIntegration).CurrentValue;
+
             _log = log;
         }
 
-        [TimerTrigger("00:00:30")]
+        [TimerTrigger("00:01:00")]
         public async Task CheckServicesUpdates()
         {
             try
@@ -49,13 +54,13 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
             }
             catch (Exception ex)
             {
-                var msg = $":exclamation: Error while services checking:{Environment.NewLine} {ex.Message}";
+                var msg = $":exclamation: {_appName} {_appVersion}: Error while services checking:{Environment.NewLine} {ex.Message}";
                 await SendNotification(SlackMonitorChannel, msg);
                 throw;
             }
         }
 
-        [TimerTrigger("00:00:30")]
+        [TimerTrigger("00:01:00")]
         public async Task VerifyHostsAreOk()
         {
             try
@@ -86,7 +91,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
                     if (!string.IsNullOrEmpty(model?.Error))
                     {
                         await SendNotification(
-                            SlackMonitorChannel, $":exclamation: {host.ServiceName}: {model.Error}");
+                            SlackMonitorChannel, $":exclamation: {_appName} {_appVersion}: {host.ServiceName}: {model.Error}");
                     }
                 }
                 catch
@@ -116,23 +121,26 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
             var dtUtcNow = DateTime.UtcNow;
             foreach (var record in records)
             {
-                if (dtUtcNow - record.DateTime > _updateTimeSpan)
-                    await SendNotification(
-                        SlackMonitorChannel,
-                        $":exclamation: No updates from {record.ServiceName} within {(dtUtcNow - record.DateTime).ToString("h'h 'm'm 's's'")}!");
+                var timeDiff = dtUtcNow - record.DateTime;
+                if (timeDiff <= _updateTimeSpan)
+                    continue;
+
+                await SendNotification(
+                    SlackMonitorChannel,
+                    $":exclamation: {_appName} {_appVersion}: No updates from {record.ServiceName} within {timeDiff.ToString("d'd 'h'h 'm'm 's's'")}!");
             }
         }
 
         private async Task SendNotification(string type, string message, string sender = null)
         {
-            var webHookUrl = _slackIntegrationSettings.CurrentValue.GetChannelWebHook(type);
+            var webHookUrl = _slackIntegrationSettings.GetChannelWebHook(type);
             if (webHookUrl == null)
                 return;
 
             var text = new StringBuilder();
 
-            if (!string.IsNullOrEmpty(_slackIntegrationSettings.CurrentValue.Env))
-                text.AppendLine($"Environment: {_slackIntegrationSettings.CurrentValue.Env}");
+            if (!string.IsNullOrEmpty(_slackIntegrationSettings.Env))
+                text.AppendLine($"Environment: {_slackIntegrationSettings.Env}");
 
             text.AppendLine(sender != null ? $"{sender} : {message}" : message);
 
