@@ -27,7 +27,7 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
 
         private readonly IServiceMonitoringRepository _serviceMonitoringRepository;
         private readonly ServiceMonitoringSettings _serviceMonitoringSettings;
-        private readonly IReloadingManager<SlackIntegrationSettings> _slackIntegrationSettings;
+        private readonly SlackIntegrationSettings _slackIntegrationSettings;
         private readonly ILog _log;
         private readonly TimeSpan _updateTimeSpan = TimeSpan.FromSeconds(120);
         private readonly string _appName = PlatformServices.Default.Application.ApplicationName;
@@ -40,7 +40,8 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
         {
             _serviceMonitoringRepository = serviceMonitoringRepository;
             _serviceMonitoringSettings = settings.Nested(x => x.ServiceMonitoringJob).CurrentValue;
-            _slackIntegrationSettings = settings.Nested(x => x.SlackIntegration);
+            _slackIntegrationSettings = settings.Nested(x => x.SlackIntegration).CurrentValue;
+
             _log = log;
         }
 
@@ -132,14 +133,14 @@ namespace Lykke.Job.ServicesMonitoring.TriggerHandlers
 
         private async Task SendNotification(string type, string message, string sender = null)
         {
-            var webHookUrl = _slackIntegrationSettings.CurrentValue.GetChannelWebHook(type);
+            var webHookUrl = _slackIntegrationSettings.GetChannelWebHook(type);
             if (webHookUrl == null)
                 return;
 
             var text = new StringBuilder();
 
-            if (!string.IsNullOrEmpty(_slackIntegrationSettings.CurrentValue.Env))
-                text.AppendLine($"Environment: {_slackIntegrationSettings.CurrentValue.Env}");
+            if (!string.IsNullOrEmpty(_slackIntegrationSettings.Env))
+                text.AppendLine($"Environment: {_slackIntegrationSettings.Env}");
 
             text.AppendLine(sender != null ? $"{sender} : {message}" : message);
 
